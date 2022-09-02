@@ -5,7 +5,6 @@
  * copyright 2013 - joseph werle <joseph.werle@gmail.com>
  */
 
-#define _POSIX_C_SOURCE 200809L
 #include <stdlib.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -229,6 +228,28 @@ fs_fnwrite (FILE *file, const char *buffer, int len) {
   return (int) fwrite(buffer, 1, len, file);
 }
 
+int fs_mkdirs(const char *dir, mode_t mode) {
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+    int ret = 0;
+    snprintf(tmp, sizeof(tmp),"%s",dir);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            if (fs_exists(tmp)){
+              ret = fs_mkdir(tmp, mode);
+              if (ret){
+                return ret;
+              }
+            }
+            *p = '/';
+    }
+    return fs_mkdir(tmp, mode);
+}
 
 int
 fs_mkdir (const char *path, int mode) {
@@ -245,6 +266,28 @@ fs_rmdir (const char *path) {
   return rmdir(path);
 }
 
+int fs_rmdirs(const char *const path) {
+    DIR *const directory = opendir(path);
+    if (directory) {
+        struct dirent *entry;
+        while ((entry = readdir(directory))) {
+            if (!strcmp(".", entry->d_name) || !strcmp("..", entry->d_name)) {
+                continue;
+            }
+            char filename[strlen(path) + strlen(entry->d_name) + 2];
+            sprintf(filename, "%s/%s", path, entry->d_name);
+            int (*const remove_func)(const char*) = entry->d_type == DT_DIR ? fs_rmdirs : remove;
+            if (remove_func(entry->d_name)) {
+                closedir(directory);
+                return -1;
+            }
+        }
+        if (closedir(directory)) {
+            return -1;
+        }
+    }
+    return remove(path);
+}
 
 int
 fs_exists (const char *path) {
