@@ -241,6 +241,17 @@ fs_mkdir (const char *path, int mode);
 int
 fs_rmdir (const char *path);
 
+
+/**
+ * Makes a directory and parents
+ * 0 on success or -1 on failure
+ */
+int fs_mkdirs (const char *path, mode_t mode);
+
+int fs_rmdirs(const char *const path);
+
+
+
 /**
  * Check if the given `path` exists
  */
